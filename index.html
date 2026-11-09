@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hyperstatisme">
+<meta name="theme-color" content="#F2F4F6">
+<style>:root{color-scheme:light}</style>
+<title>Degré d’hyperstatisme</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Mise en page : une colonne sur papier millimétré. Le résultat h reste collé en haut, comme le cartouche d'un plan. */
+:root{
+  --font-display:'Barlow Condensed','Arial Narrow',Arial,sans-serif;
+  --font-body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-data:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  --paper:#F2F4F6; --sheet:#FFFFFF; --ink:#131C26; --on-ink:#F2F4F6;
+  --muted:#4F5E6C; --rule:#C9D2DA; --grid:rgba(19,28,38,.05);
+  --accent:#1A4FD6; --accent-bg:#E6EDFC;
+  --ok:#0F7A4B; --ok-bg:#E2F4EA;
+  --warn:#9A5200; --warn-bg:#FCEBD5;
+  --bad:#B3261E; --bad-bg:#FBE4E2;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0D1319; --sheet:#151D25; --ink:#E6EBF0; --on-ink:#0D1319;
+    --muted:#9CAAB8; --rule:#2C3946; --grid:rgba(230,235,240,.05);
+    --accent:#7DA2FF; --accent-bg:#1B2A47;
+    --ok:#4FD18B; --ok-bg:#12301F;
+    --warn:#F2A44E; --warn-bg:#3A2610;
+    --bad:#FF8F85; --bad-bg:#3D1916;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0D1319; --sheet:#151D25; --ink:#E6EBF0; --on-ink:#0D1319;
+  --muted:#9CAAB8; --rule:#2C3946; --grid:rgba(230,235,240,.05);
+  --accent:#7DA2FF; --accent-bg:#1B2A47;
+  --ok:#4FD18B; --ok-bg:#12301F;
+  --warn:#F2A44E; --warn-bg:#3A2610;
+  --bad:#FF8F85; --bad-bg:#3D1916;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{
+  margin:0;font:400 16px/1.45 var(--font-body);color:var(--ink);
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:20px 20px;
+  padding-block:20px 48px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  -webkit-text-size-adjust:100%;
+}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+.wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.kicker{margin:0;font:500 12px/1.2 var(--font-data);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+h1{margin:6px 0 6px;font:700 38px/1 var(--font-display);letter-spacing:.005em;text-wrap:balance}
+.lede{margin:0;font-size:15px;color:var(--muted)}
+button{font-family:inherit}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border:1.5px solid var(--ink);background:var(--sheet)}
+.seg button{appearance:none;-webkit-appearance:none;border:0;border-radius:0;background:transparent;color:var(--ink);
+  font:600 17px/1 var(--font-display);letter-spacing:.07em;text-transform:uppercase;min-height:44px;padding:0 10px;cursor:pointer;touch-action:manipulation}
+.seg button+button{border-left:1.5px solid var(--ink)}
+.seg button[aria-selected="true"],.seg button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink)}
+
+.verdict{
+  --tone:var(--accent);--tone-bg:var(--accent-bg);
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:5;
+  display:grid;grid-template-columns:auto minmax(0,1fr);
+  border:1.5px solid var(--ink);background:var(--sheet);
+  box-shadow:0 8px 10px -8px rgba(0,0,0,.35);
+}
+.verdict[data-tone="ok"]{--tone:var(--ok);--tone-bg:var(--ok-bg)}
+.verdict[data-tone="warn"]{--tone:var(--warn);--tone-bg:var(--warn-bg)}
+.verdict[data-tone="bad"]{--tone:var(--bad);--tone-bg:var(--bad-bg)}
+.vh{display:flex;align-items:baseline;gap:8px;padding:6px 16px 6px 14px;min-width:112px;background:var(--tone-bg);border-right:1.5px solid var(--ink)}
+.vlabel{font:600 20px/1 var(--font-display);color:var(--muted)}
+.vnum{font:700 48px/1 var(--font-display);color:var(--tone);font-variant-numeric:tabular-nums}
+.vt{display:flex;flex-direction:column;justify-content:center;gap:2px;padding:8px 14px;min-width:0}
+.vt strong{font:600 22px/1.1 var(--font-display);color:var(--tone);text-wrap:balance}
+.vt span{font-size:13.5px;color:var(--muted)}
+
+.sheet{background:var(--sheet);border:1px solid var(--rule);padding:14px 16px 10px;min-width:0}
+.group+.group{margin-top:20px}
+.group>h2,.sheet>h2{margin:0 0 6px;font:600 15px/1 var(--font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.rhint{margin:2px 0 0;font-size:13.5px;color:var(--muted)}
+.group>.seg{margin:8px 0 8px}
+
+.tools{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.exlabel{margin:0;flex:1 1 220px;font-size:13.5px;color:var(--muted)}
+.toolbtns{display:flex;gap:8px}
+.btn{appearance:none;-webkit-appearance:none;border:1px solid var(--ink);border-radius:0;background:var(--sheet);color:var(--ink);
+  font:600 14px/1 var(--font-display);letter-spacing:.09em;text-transform:uppercase;min-height:40px;padding:0 14px;cursor:pointer;touch-action:manipulation}
+
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 8px;margin:0 -8px;border-top:1px solid var(--rule)}
+.row[data-on="true"]{background:var(--accent-bg)}
+.rtxt{min-width:0}
+.rname{font-weight:500;line-height:1.3}
+.row[data-on="true"] .rname{font-weight:600}
+.rmeta{margin-top:2px;font:400 12.5px/1.35 var(--font-data);color:var(--muted)}
+.step{display:flex}
+.step button{appearance:none;-webkit-appearance:none;width:44px;height:44px;border:1px solid var(--ink);border-radius:0;background:var(--sheet);color:var(--ink);
+  font:500 22px/1 var(--font-data);padding:0;cursor:pointer;touch-action:manipulation}
+.step button:active{background:var(--accent-bg)}
+.num{width:56px;height:44px;border:1px solid var(--ink);border-left:0;border-right:0;border-radius:0;background:var(--sheet);color:var(--ink);
+  font:500 18px/1 var(--font-data);text-align:center;padding:0;font-variant-numeric:tabular-nums;-webkit-appearance:none;appearance:none}
+.row[data-on="true"] .num{color:var(--accent);font-weight:600}
+.num:focus-visible{outline-offset:-2px}
+@media (hover:hover){
+  .step button:hover,.btn:hover{background:var(--accent-bg)}
+}
+
+.calc{margin:0}
+.cr{display:grid;grid-template-columns:48px minmax(0,1fr);column-gap:12px;row-gap:1px;padding:8px 0;border-top:1px solid var(--rule)}
+.cr dt{grid-row:span 2;font:700 24px/1.05 var(--font-display);color:var(--ink)}
+.cr dd{margin:0;min-width:0}
+.cr .what{font-size:12.5px;color:var(--muted)}
+.cr .expr{font:500 14.5px/1.45 var(--font-data);overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.cr.final{background:var(--accent-bg);margin:0 -16px;padding-inline:16px}
+.cr.final dt{color:var(--accent)}
+.warn{margin:10px 0 0;padding:8px 12px;border:1px solid var(--warn);background:var(--warn-bg);font-size:14px}
+.note{margin:12px 0 0;font-size:13.5px;color:var(--muted)}
+.actions{display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
+#copied{font-size:13.5px;color:var(--muted)}
+
+details.sheet summary{cursor:pointer;font:600 15px/1.2 var(--font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);min-height:28px;display:flex;align-items:center}
+details.sheet[open] summary{margin-bottom:8px}
+#recallBody p{margin:0 0 8px;font-size:14.5px}
+#recallBody code{font:500 13.5px var(--font-data);background:var(--accent-bg);padding:1px 5px}
+.foot{margin:4px 0 0;font-size:13px;color:var(--muted)}
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="kicker">Mécanique · feuille de calcul</p>
+    <h1>Degré d’hyperstatisme</h1>
+    <p class="lede">Choisis le type de système, règle les compteurs, lis <i>h</i> en haut de l’écran.</p>
+  </header>
+
+  <div class="seg" id="tabs" role="tablist" aria-label="Type de système">
+    <button type="button" role="tab" data-mode="liaisons">Liaisons</button>
+    <button type="button" role="tab" data-mode="portique">Portiques</button>
+    <button type="button" role="tab" data-mode="treillis">Treillis</button>
+  </div>
+
+  <div class="verdict" id="verdict" data-tone="ok" role="status" aria-live="polite">
+    <div class="vh"><span class="vlabel">h =</span><span class="vnum" id="vnum">0</span></div>
+    <div class="vt"><strong id="vtitle">Isostatique</strong><span id="vsub"></span></div>
+  </div>
+
+  <section class="sheet" id="panel" aria-label="Données du système"></section>
+
+  <section class="sheet" id="detail" aria-labelledby="detailTitle">
+    <h2 id="detailTitle">Détail du calcul</h2>
+    <dl class="calc" id="calc"></dl>
+    <div id="warns"></div>
+    <p class="note" id="note"></p>
+    <div class="actions">
+      <button class="btn" id="copy" type="button">Copier le détail</button>
+      <span id="copied" role="status"></span>
+    </div>
+  </section>
+
+  <details class="sheet" id="recall">
+    <summary>Rappel de méthode</summary>
+    <div id="recallBody"></div>
+  </details>
+
+  <p class="foot">Hypothèses du cours : solides indéformables, liaisons parfaites. Le décompte ne détecte pas les cas géométriques particuliers (axes parallèles ou concourants).</p>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+// ==CORE==
+var LIAISONS = {
+  '3d': [
+    {id:'enc', nom:'Encastrement', mob:'aucune mobilité', ic:0},
+    {id:'piv', nom:'Pivot', mob:'1R', ic:1},
+    {id:'gli', nom:'Glissière', mob:'1T', ic:1},
+    {id:'hel', nom:'Hélicoïdale', mob:'1R+1T liées', ic:1},
+    {id:'pgl', nom:'Pivot glissant', mob:'1R 1T', ic:2},
+    {id:'rdo', nom:'Rotule à doigt', mob:'2R', ic:2},
+    {id:'app', nom:'Appui plan', mob:'1R 2T', ic:3},
+    {id:'rot', nom:'Rotule (sphérique)', mob:'3R', ic:3},
+    {id:'lan', nom:'Linéaire annulaire (sphère-cylindre)', mob:'3R 1T', ic:4},
+    {id:'lre', nom:'Linéaire rectiligne (cylindre-plan)', mob:'2R 2T', ic:4},
+    {id:'pon', nom:'Ponctuelle (sphère-plan)', mob:'3R 2T', ic:5}
+  ],
+  '2d': [
+    {id:'enc', nom:'Encastrement', mob:'aucune mobilité', ic:0},
+    {id:'piv', nom:'Pivot (axe normal au plan)', mob:'1R', ic:1},
+    {id:'gli', nom:'Glissière', mob:'1T', ic:1},
+    {id:'pon', nom:'Ponctuelle (contact en un point)', mob:'1R 1T', ic:2}
+  ]
+};
+function toN(v){ var x = Math.floor(Number(v)); return (isFinite(x) && x > 0) ? x : 0; }
+// k = 6 (espace) ou 3 (plan) ; items = [{q: quantité, ic: ddl de la liaison}]
+function coreLiaisons(k, p, m, items){
+  var L = 0, Ic = 0, i;
+  for (i = 0; i < items.length; i++){ L += items[i].q; Ic += items[i].q * items[i].ic; }
+  var Ns = k * L - Ic, Es = k * (p - 1), gamma = L - p + 1;
+  return {k:k, p:p, m:m, L:L, Ic:Ic, Ns:Ns, Es:Es, gamma:gamma, hS:Ns - Es + m, hK:m - Ic + k * gamma};
+}
+function corePortique(b, n, R, c, m){
+  var C = b - n + 1;
+  return {b:b, n:n, R:R, c:c, m:m, C:C, h:3*b + R - 3*n - c + m, hC:R + 3*C - 3 - c + m};
+}
+function coreTreillis(d, b, n, R, m){
+  return {d:d, b:b, n:n, R:R, m:m, C:b - n + 1, h:b + R - d*n + m};
+}
+// ==/CORE==
+
+function $(id){ return document.getElementById(id); }
+var panel = $('panel'), tabs = $('tabs');
+var MODES = ['liaisons','portique','treillis'];
+var KEY = 'hyperstatisme-v1';
+
+var EX = {
+  liaisons: function(){ return {space:'3d', p:2, mu:1, mi:0, q3d:{rot:1, lan:1}, q2d:{}}; },
+  portique: function(){ return {count:'bn', b:1, n:2, C:0, r:{sim:1, art:0, gli:0, enc:1}, c:0, m:0}; },
+  treillis: function(){ return {space:'2d', b:11, n:7, r2:{c1:1, c2:1}, r3:{c1:0, c2:0, c3:0}, m:0}; }
+};
+var BLANK = {
+  liaisons: function(){ return {space:'3d', p:2, mu:0, mi:0, q3d:{}, q2d:{}}; },
+  portique: function(){ return {count:'bn', b:0, n:0, C:0, r:{sim:0, art:0, gli:0, enc:0}, c:0, m:0}; },
+  treillis: function(){ return {space:'2d', b:0, n:0, r2:{c1:0, c2:0}, r3:{c1:0, c2:0, c3:0}, m:0}; }
+};
+var EXLABEL = {
+  liaisons: 'Exemple chargé : arbre sur deux roulements, l’un à rotule, l’autre linéaire annulaire.',
+  portique: 'Exemple chargé : poutre encastrée à gauche, posée sur un appui simple à droite.',
+  treillis: 'Exemple chargé : treillis plan de 7 nœuds et 11 barres, articulation et appui simple.'
+};
+
+function fresh(){
+  return {mode:'liaisons', liaisons:EX.liaisons(), portique:EX.portique(), treillis:EX.treillis(), ex:{liaisons:true, portique:true, treillis:true}};
+}
+function load(){
+  try{
+    var raw = localStorage.getItem(KEY); if(!raw) return null;
+    var o = JSON.parse(raw);
+    if(!o || MODES.indexOf(o.mode) < 0 || !o.liaisons || !o.portique || !o.treillis) return null;
+    o.ex = o.ex || {};
+    return o;
+  }catch(e){ return null; }
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+var S = load() || fresh();
+
+function getp(path){ return path.split('.').reduce(function(o,k){ return o[k]; }, S); }
+function setp(path, v){
+  var ks = path.split('.'), last = ks.pop();
+  ks.reduce(function(o,k){ return o[k]; }, S)[last] = v;
+}
+
+/* ---------- construction des champs ---------- */
+function rowHTML(o){
+  var raw = getp(o.path), v = (raw === undefined) ? 0 : raw;
+  var id = 'f-' + o.path.replace(/\./g, '-');
+  return '<div class="row"' + (o.opt ? ' data-opt' : '') + ' data-path="' + o.path + '" data-on="' + (!!o.opt && toN(v) > 0) + '">' +
+    '<div class="rtxt"><div class="rname">' + o.name + '</div>' +
+    (o.meta ? '<div class="rmeta">' + o.meta + '</div>' : '') +
+    (o.hint ? '<div class="rhint">' + o.hint + '</div>' : '') + '</div>' +
+    '<div class="step">' +
+      '<button type="button" data-step="' + o.path + '" data-d="-1" aria-label="Diminuer : ' + o.name + '">−</button>' +
+      '<input class="num" id="' + id + '" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="done" data-path="' + o.path + '" value="' + v + '" aria-label="' + o.name + '">' +
+      '<button type="button" data-step="' + o.path + '" data-d="1" aria-label="Augmenter : ' + o.name + '">+</button>' +
+    '</div></div>';
+}
+function segHTML(path, opts, label){
+  var cur = getp(path);
+  return '<div class="seg" role="group" aria-label="' + label + '">' + opts.map(function(o){
+    return '<button type="button" data-set="' + path + '" data-val="' + o.v + '" aria-pressed="' + (cur === o.v) + '">' + o.t + '</button>';
+  }).join('') + '</div>';
+}
+function toolsHTML(){
+  return '<div class="tools"><p class="exlabel" id="exlabel"></p><div class="toolbtns">' +
+    '<button class="btn" type="button" data-act="example">Exemple</button>' +
+    '<button class="btn" type="button" data-act="clear">Effacer</button></div></div>';
+}
+
+function buildLiaisons(){
+  var s = S.liaisons, is3 = s.space === '3d', k = is3 ? 6 : 3, qp = is3 ? 'q3d' : 'q2d';
+  var html = toolsHTML();
+  html += '<div class="group"><h2>Système</h2>' +
+    segHTML('liaisons.space', [{v:'3d', t:'Espace 3D'}, {v:'2d', t:'Plan'}], 'Modèle') +
+    rowHTML({path:'liaisons.p', name:'Solides p', hint:'Bâti compris.'}) +
+    rowHTML({path:'liaisons.mu', name:'Mobilités utiles', hint:'Mouvements voulus, par exemple la rotation de l’arbre.'}) +
+    rowHTML({path:'liaisons.mi', name:'Mobilités internes', hint:'Mouvements sans effet sur la sortie, par exemple la rotation d’un galet sur son axe.'}) +
+    '</div>';
+  html += '<div class="group"><h2>Liaisons</h2><p class="rhint">Ic : degrés de liberté de la liaison. Ns : inconnues statiques, soit ' + k + ' − Ic.</p>';
+  LIAISONS[s.space].forEach(function(l){
+    html += rowHTML({path:'liaisons.' + qp + '.' + l.id, name:l.nom, meta:l.mob + ' · Ic ' + l.ic + ' · Ns ' + (k - l.ic), opt:true});
+  });
+  return html + '</div>';
+}
+function buildPortique(){
+  var s = S.portique, html = toolsHTML();
+  html += '<div class="group"><h2>Structure plane</h2>' +
+    segHTML('portique.count', [{v:'bn', t:'Barres et nœuds'}, {v:'C', t:'Contours fermés'}], 'Méthode de comptage');
+  if (s.count === 'bn'){
+    html += rowHTML({path:'portique.b', name:'Barres b', hint:'Tronçons entre deux nœuds.'}) +
+            rowHTML({path:'portique.n', name:'Nœuds n', hint:'Appuis, jonctions et extrémités libres.'});
+  } else {
+    html += rowHTML({path:'portique.C', name:'Contours fermés C', hint:'Boucles fermées formées par les barres seules (le sol ne compte pas).'});
+  }
+  html += '</div><div class="group"><h2>Appuis</h2>' +
+    rowHTML({path:'portique.r.sim', name:'Appui simple (rouleau)', meta:'1 réaction', opt:true}) +
+    rowHTML({path:'portique.r.art', name:'Articulation fixe', meta:'2 réactions', opt:true}) +
+    rowHTML({path:'portique.r.gli', name:'Glissière (rotation bloquée)', meta:'2 réactions', opt:true}) +
+    rowHTML({path:'portique.r.enc', name:'Encastrement', meta:'3 réactions', opt:true}) +
+    '</div><div class="group"><h2>Compléments</h2>' +
+    rowHTML({path:'portique.c', name:'Relâchements internes c', hint:'Rotule reliant k barres : k − 1. Une rotule entre deux barres compte 1.'}) +
+    rowHTML({path:'portique.m', name:'Mécanismes m', hint:'Laisse 0 si la structure est stable.'}) + '</div>';
+  return html;
+}
+function buildTreillis(){
+  var s = S.treillis, html = toolsHTML();
+  html += '<div class="group"><h2>Treillis</h2>' +
+    segHTML('treillis.space', [{v:'2d', t:'Plan'}, {v:'3d', t:'Espace 3D'}], 'Dimension') +
+    rowHTML({path:'treillis.b', name:'Barres b', hint:'Chaque barre travaille en traction ou compression.'}) +
+    rowHTML({path:'treillis.n', name:'Nœuds n', hint:'Appuis compris.'}) + '</div>';
+  html += '<div class="group"><h2>Appuis</h2>';
+  if (s.space === '2d'){
+    html += rowHTML({path:'treillis.r2.c1', name:'Appui simple', meta:'1 réaction', opt:true}) +
+            rowHTML({path:'treillis.r2.c2', name:'Articulation', meta:'2 réactions', opt:true});
+  } else {
+    html += rowHTML({path:'treillis.r3.c1', name:'Appui à 1 composante', meta:'1 réaction', opt:true}) +
+            rowHTML({path:'treillis.r3.c2', name:'Appui à 2 composantes', meta:'2 réactions', opt:true}) +
+            rowHTML({path:'treillis.r3.c3', name:'Rotule (3 composantes)', meta:'3 réactions', opt:true});
+  }
+  html += '</div><div class="group"><h2>Compléments</h2>' +
+    rowHTML({path:'treillis.m', name:'Mécanismes m', hint:'Laisse 0 si le treillis est stable.'}) + '</div>';
+  return html;
+}
+
+var RECALL = {
+  liaisons:
+    '<p><b>Équations statiques</b> : <code>Es = 6(p − 1)</code> dans l’espace, <code>3(p − 1)</code> dans le plan.</p>' +
+    '<p><b>Inconnues statiques</b> : <code>Ns = Σ(6 − ddl)</code> soit <code>6L − Ic</code> (3L − Ic dans le plan).</p>' +
+    '<p><b>Méthode statique</b> : <code>h = Ns − Es + m</code>, avec m = mobilités utiles + internes.</p>' +
+    '<p><b>Méthode cinématique</b> : <code>h = m − Ic + 6γ</code> (3γ dans le plan), avec γ = L − p + 1.</p>' +
+    '<p>Les deux méthodes donnent le même h. Si h est négatif, m est trop petit ou une liaison est mal comptée.</p>',
+  portique:
+    '<p>Dans le plan, chaque barre a 3 degrés de liberté et chaque nœud rigide impose 3 conditions.</p>' +
+    '<p><code>h = 3b + R − 3n − c + m</code></p>' +
+    '<p>Avec C contours fermés (C = b − n + 1) : <code>h = R + 3C − 3 − c + m</code></p>' +
+    '<p>Contrôles : poutre bi-encastrée h = 3, arc à trois articulations h = 0.</p>' +
+    '<p>h &lt; 0 : la structure est un mécanisme.</p>',
+  treillis:
+    '<p>Plan : <code>h = b + R − 2n</code>. Espace : <code>h = b + R − 3n</code>.</p>' +
+    '<p>Chaque nœud fournit 2 (ou 3) équations ; chaque barre et chaque réaction apporte une inconnue.</p>' +
+    '<p>h &lt; 0 : le treillis est un mécanisme. Le décompte ne détecte pas un sous-ensemble déformable compensé par un hyperstatisme local.</p>'
+};
+
+/* ---------- calculs ---------- */
+function f(n){ return String(n).replace('-', '−'); }
+function pn(n){ return n < 0 ? '(' + f(n) + ')' : f(n); }
+function plural(n, w){ return n + ' ' + w + (n > 1 ? 's' : ''); }
+function sumExpr(parts){
+  var nz = parts.filter(function(p){ return p.q > 0; });
+  var tot = parts.reduce(function(a, p){ return a + p.q * p.w; }, 0);
+  if (!nz.length) return {tot:0, expr:'0'};
+  return {tot:tot, expr: nz.map(function(p){ return p.q + '×' + p.w; }).join(' + ') + ' = ' + tot};
+}
+function line(sym, what, expr, final){ return {sym:sym, what:what, expr:expr, final:!!final}; }
+
+function verdict(h, m, kind){
+  if (h === null) return {tone:'warn', title:'Données incomplètes', sub:'Complète les compteurs pour obtenir h.'};
+  if (h < 0){
+    return kind === 'liaisons'
+      ? {tone:'bad', title:'h négatif : incohérent', sub:'Les mobilités m sont probablement sous-estimées.'}
+      : {tone:'bad', title:'Mécanisme', sub:'Il manque ' + plural(-h, 'condition') + ' de liaison.'};
+  }
+  var mob = m > 0 ? ' · ' + plural(m, 'mobilité') : '';
+  if (h === 0) return {tone:'ok', title:'Isostatique', sub:'Autant d’équations que d’inconnues' + mob + '.'};
+  return {tone:'info', title:'Hyperstatique de degré ' + h, sub:plural(h, 'inconnue') + ' statique' + (h > 1 ? 's' : '') + ' en trop' + mob + '.'};
+}
+
+function computeLiaisons(){
+  var s = S.liaisons, is3 = s.space === '3d', k = is3 ? 6 : 3, q = is3 ? s.q3d : s.q2d;
+  var items = LIAISONS[s.space].map(function(l){ return {q:toN(q[l.id]), ic:l.ic}; });
+  var p = toN(s.p), mu = toN(s.mu), mi = toN(s.mi), m = mu + mi;
+  var c = coreLiaisons(k, p, m, items), warns = [], rows = [], h = c.hS;
+  if (p < 2){ warns.push('Il faut au moins 2 solides : le bâti compte pour un.'); h = null; }
+  else if (c.L < p - 1){ warns.push('Avec ' + p + ' solides, il faut au moins ' + (p - 1) + ' liaisons pour tout relier (L = ' + c.L + ').'); h = null; }
+  else if (h < 0){ warns.push('h ne peut pas être négatif. Vérifie m : une mobilité oubliée ou une liaison mal comptée donne ce résultat.'); }
+  rows.push(line('p', 'solides, bâti compris', String(p)));
+  rows.push(line('L', 'liaisons', String(c.L)));
+  rows.push(line('Ic', 'inconnues cinématiques', 'Σ ddl = ' + c.Ic));
+  rows.push(line('Ns', 'inconnues statiques', k + '×' + c.L + ' − ' + c.Ic + ' = ' + c.Ns));
+  rows.push(line('Es', 'équations statiques', k + '×(' + p + ' − 1) = ' + f(c.Es)));
+  rows.push(line('m', 'mobilités', mu + ' + ' + mi + ' = ' + m));
+  rows.push(line('γ', 'nombre cyclomatique', c.L + ' − ' + p + ' + 1 = ' + f(c.gamma)));
+  if (h !== null || p >= 2){
+    if (p >= 2 && c.L >= p - 1){
+      rows.push(line('h', 'méthode statique', 'Ns − Es + m = ' + c.Ns + ' − ' + c.Es + ' + ' + m + ' = ' + f(c.hS), true));
+      rows.push(line('h', 'méthode cinématique', 'm − Ic + ' + k + 'γ = ' + m + ' − ' + c.Ic + ' + ' + k + '×' + pn(c.gamma) + ' = ' + f(c.hK), true));
+    }
+  }
+  return {h:h, m:m, kind:'liaisons', rows:rows, warns:warns, note:''};
+}
+
+function computePortique(){
+  var s = S.portique, m = toN(s.m), c = toN(s.c), warns = [], rows = [], h = null;
+  var sup = sumExpr([{q:toN(s.r.sim), w:1}, {q:toN(s.r.art), w:2}, {q:toN(s.r.gli), w:2}, {q:toN(s.r.enc), w:3}]);
+  var R = sup.tot;
+  if (s.count === 'bn'){
+    var b = toN(s.b), n = toN(s.n), core = corePortique(b, n, R, c, m);
+    rows.push(line('b', 'barres', String(b)));
+    rows.push(line('n', 'nœuds', String(n)));
+    rows.push(line('C', 'contours fermés', b + ' − ' + n + ' + 1 = ' + f(core.C)));
+    rows.push(line('R', 'réactions d’appui', sup.expr));
+    rows.push(line('c', 'relâchements', String(c)));
+    rows.push(line('m', 'mécanismes', String(m)));
+    if (b < 1 || n < 2){ warns.push('Entre au moins 1 barre et 2 nœuds.'); }
+    else if (core.C < 0){ warns.push('Avec ' + b + ' barres, on ne relie pas ' + n + ' nœuds : il faut b ≥ n − 1.'); }
+    else {
+      h = core.h;
+      rows.push(line('h', 'avec b et n', '3b + R − 3n − c + m = 3×' + b + ' + ' + R + ' − 3×' + n + ' − ' + c + ' + ' + m + ' = ' + f(core.h), true));
+      rows.push(line('h', 'avec C', 'R + 3C − 3 − c + m = ' + R + ' + 3×' + core.C + ' − 3 − ' + c + ' + ' + m + ' = ' + f(core.hC), true));
+    }
+  } else {
+    var C = toN(s.C);
+    h = R + 3 * C - 3 - c + m;
+    rows.push(line('C', 'contours fermés', String(C)));
+    rows.push(line('R', 'réactions d’appui', sup.expr));
+    rows.push(line('c', 'relâchements', String(c)));
+    rows.push(line('m', 'mécanismes', String(m)));
+    rows.push(line('h', 'avec C', 'R + 3C − 3 − c + m = ' + R + ' + 3×' + C + ' − 3 − ' + c + ' + ' + m + ' = ' + f(h), true));
+  }
+  return {h:h, m:m, kind:'struct', rows:rows, warns:warns, note:'Le décompte ne vérifie pas la stabilité géométrique : appuis concourants ou parallèles, parties déformables.'};
+}
+
+function computeTreillis(){
+  var s = S.treillis, is3 = s.space === '3d', d = is3 ? 3 : 2, m = toN(s.m), warns = [], rows = [], h = null;
+  var parts = is3
+    ? [{q:toN(s.r3.c1), w:1}, {q:toN(s.r3.c2), w:2}, {q:toN(s.r3.c3), w:3}]
+    : [{q:toN(s.r2.c1), w:1}, {q:toN(s.r2.c2), w:2}];
+  var sup = sumExpr(parts), R = sup.tot, b = toN(s.b), n = toN(s.n);
+  var core = coreTreillis(d, b, n, R, m);
+  rows.push(line('b', 'barres', String(b)));
+  rows.push(line('n', 'nœuds', String(n)));
+  rows.push(line('R', 'réactions d’appui', sup.expr));
+  rows.push(line('m', 'mécanismes', String(m)));
+  if (b < 1 || n < 2){ warns.push('Entre au moins 1 barre et 2 nœuds.'); }
+  else if (core.C < 0){ warns.push('Avec ' + b + ' barres, on ne relie pas ' + n + ' nœuds : il faut b ≥ n − 1.'); }
+  else {
+    h = core.h;
+    rows.push(line('h', 'treillis ' + (is3 ? 'spatial' : 'plan'), 'b + R − ' + d + 'n + m = ' + b + ' + ' + R + ' − ' + d + '×' + n + ' + ' + m + ' = ' + f(h), true));
+  }
+  return {h:h, m:m, kind:'struct', rows:rows, warns:warns, note:'Le décompte ne vérifie pas la stabilité géométrique : appuis concourants ou parallèles, parties déformables.'};
+}
+
+/* ---------- affichage ---------- */
+var lastText = '';
+function rowHtml(r){
+  var e = r.expr, i = e.lastIndexOf('='), shown = i >= 0 ? e.slice(0, i + 1) + ' <b>' + e.slice(i + 1).trim() + '</b>' : e;
+  return '<div class="cr' + (r.final ? ' final' : '') + '"><dt>' + r.sym + '</dt><dd class="what">' + r.what + '</dd><dd class="expr">' + shown + '</dd></div>';
+}
+function paint(r){
+  var v = verdict(r.h, r.m, r.kind), ver = $('verdict');
+  ver.dataset.tone = v.tone;
+  $('vnum').textContent = r.h === null ? '—' : f(r.h);
+  $('vtitle').textContent = v.title;
+  $('vsub').textContent = v.sub;
+  $('calc').innerHTML = r.rows.map(rowHtml).join('');
+  $('warns').innerHTML = r.warns.map(function(w){ return '<p class="warn">' + w + '</p>'; }).join('');
+  $('note').textContent = r.note;
+  $('note').style.display = r.note ? '' : 'none';
+  var el = $('exlabel'); if (el) el.textContent = S.ex[S.mode] ? EXLABEL[S.mode] : 'Valeurs saisies par toi.';
+  Array.prototype.forEach.call(panel.querySelectorAll('.row[data-opt]'), function(row){
+    row.dataset.on = String(toN(getp(row.dataset.path)) > 0);
+  });
+  lastText = (r.h === null ? 'h : données incomplètes' : 'h = ' + f(r.h) + ' · ' + v.title) + '\n' +
+    r.rows.map(function(x){ return x.sym + ' (' + x.what + ') : ' + x.expr; }).join('\n');
+}
+function update(){
+  var r = ({liaisons:computeLiaisons, portique:computePortique, treillis:computeTreillis})[S.mode]();
+  paint(r); save();
+}
+function build(){
+  panel.innerHTML = ({liaisons:buildLiaisons, portique:buildPortique, treillis:buildTreillis})[S.mode]();
+  $('recallBody').innerHTML = RECALL[S.mode];
+  Array.prototype.forEach.call(tabs.querySelectorAll('button'), function(b){
+    b.setAttribute('aria-selected', String(b.dataset.mode === S.mode));
+  });
+}
+function setMode(m, fromHash){
+  if (MODES.indexOf(m) < 0) return;
+  S.mode = m; build(); update();
+  if (!fromHash){ try{ if (location.hash.slice(1) !== m) location.hash = m; }catch(e){} }
+}
+
+/* ---------- événements ---------- */
+tabs.addEventListener('click', function(e){
+  var b = e.target.closest('button[data-mode]'); if (b) setMode(b.dataset.mode);
+});
+panel.addEventListener('click', function(e){
+  var st = e.target.closest('[data-step]');
+  if (st){
+    var path = st.dataset.step;
+    var next = Math.max(0, Math.min(999, toN(getp(path)) + Number(st.dataset.d)));
+    setp(path, next); S.ex[S.mode] = false;
+    var inp = panel.querySelector('input[data-path="' + path + '"]'); if (inp) inp.value = next;
+    update(); return;
+  }
+  var set = e.target.closest('[data-set]');
+  if (set){ setp(set.dataset.set, set.dataset.val); S.ex[S.mode] = false; build(); update(); return; }
+  var act = e.target.closest('[data-act]');
+  if (act){
+    if (act.dataset.act === 'example'){ S[S.mode] = EX[S.mode](); S.ex[S.mode] = true; }
+    else {
+      var keepSpace = S[S.mode].space;
+      S[S.mode] = BLANK[S.mode](); if (keepSpace) S[S.mode].space = keepSpace;
+      S.ex[S.mode] = false;
+    }
+    build(); update();
+  }
+});
+panel.addEventListener('input', function(e){
+  var el = e.target; if (!el.matches('input.num')) return;
+  var clean = el.value.replace(/\D/g, '').slice(0, 3);
+  if (clean !== el.value) el.value = clean;
+  setp(el.dataset.path, clean === '' ? '' : Number(clean)); S.ex[S.mode] = false;
+  update();
+});
+var copiedTimer = null;
+function say(t){ $('copied').textContent = t; clearTimeout(copiedTimer); copiedTimer = setTimeout(function(){ $('copied').textContent = ''; }, 3000); }
+$('copy').addEventListener('click', function(){
+  var fallback = function(){
+    var rng = document.createRange(); rng.selectNodeContents($('calc'));
+    var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(rng);
+    say('Texte sélectionné : copie-le avec ton clavier.');
+  };
+  try{
+    navigator.clipboard.writeText(lastText).then(function(){ say('Copié.'); }, fallback);
+  }catch(e){ fallback(); }
+});
+window.addEventListener('hashchange', function(){
+  var h = location.hash.slice(1);
+  if (MODES.indexOf(h) >= 0 && h !== S.mode) setMode(h, true);
+});
+
+var h0 = (location.hash || '').slice(1);
+if (MODES.indexOf(h0) >= 0) S.mode = h0;
+build(); update();
+})();
+</script>
+</html>
