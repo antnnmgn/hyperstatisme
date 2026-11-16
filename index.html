@@ -1,4 +1,12 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hyperstatisme">
+<meta name="theme-color" content="#F2F4F6">
+<style>:root{color-scheme:light}</style>
 <title>Degré d’hyperstatisme</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -214,15 +222,15 @@ function coreTreillis(d, b, n, R, m){
 function $(id){ return document.getElementById(id); }
 var panel = $('panel'), tabs = $('tabs');
 var MODES = ['liaisons','portique','treillis'];
-var KEY = 'hyperstatisme-v1';
+var KEY = 'hyperstatisme-v2';
 
 var EX = {
-  liaisons: function(){ return {space:'3d', p:2, mu:1, mi:0, q3d:{rot:1, lan:1}, q2d:{}}; },
+  liaisons: function(){ return {space:'3d', p:1, mu:1, mi:0, q3d:{rot:1, lan:1}, q2d:{}}; },
   portique: function(){ return {count:'bn', b:1, n:2, C:0, r:{sim:1, art:0, gli:0, enc:1}, c:0, m:0}; },
   treillis: function(){ return {space:'2d', b:11, n:7, r2:{c1:1, c2:1}, r3:{c1:0, c2:0, c3:0}, m:0}; }
 };
 var BLANK = {
-  liaisons: function(){ return {space:'3d', p:2, mu:0, mi:0, q3d:{}, q2d:{}}; },
+  liaisons: function(){ return {space:'3d', p:1, mu:0, mi:0, q3d:{}, q2d:{}}; },
   portique: function(){ return {count:'bn', b:0, n:0, C:0, r:{sim:0, art:0, gli:0, enc:0}, c:0, m:0}; },
   treillis: function(){ return {space:'2d', b:0, n:0, r2:{c1:0, c2:0}, r3:{c1:0, c2:0, c3:0}, m:0}; }
 };
@@ -284,7 +292,7 @@ function buildLiaisons(){
   var html = toolsHTML();
   html += '<div class="group"><h2>Système</h2>' +
     segHTML('liaisons.space', [{v:'3d', t:'Espace 3D'}, {v:'2d', t:'Plan'}], 'Modèle') +
-    rowHTML({path:'liaisons.p', name:'Solides p', hint:'Bâti compris.'}) +
+    rowHTML({path:'liaisons.p', name:'Solides (bâti non compris)', hint:'Le bâti est ajouté automatiquement dans le calcul : p = ce nombre + 1.'}) +
     rowHTML({path:'liaisons.mu', name:'Mobilités utiles', hint:'Mouvements voulus, par exemple la rotation de l’arbre.'}) +
     rowHTML({path:'liaisons.mi', name:'Mobilités internes', hint:'Mouvements sans effet sur la sortie, par exemple la rotation d’un galet sur son axe.'}) +
     '</div>';
@@ -336,6 +344,7 @@ function buildTreillis(){
 
 var RECALL = {
   liaisons:
+    '<p><b>Solides</b> : tu saisis les solides sans le bâti, l’outil calcule <code>p = solides + 1</code>.</p>' +
     '<p><b>Équations statiques</b> : <code>Es = 6(p − 1)</code> dans l’espace, <code>3(p − 1)</code> dans le plan.</p>' +
     '<p><b>Inconnues statiques</b> : <code>Ns = Σ(6 − ddl)</code> soit <code>6L − Ic</code> (3L − Ic dans le plan).</p>' +
     '<p><b>Méthode statique</b> : <code>h = Ns − Es + m</code>, avec m = mobilités utiles + internes.</p>' +
@@ -380,12 +389,12 @@ function verdict(h, m, kind){
 function computeLiaisons(){
   var s = S.liaisons, is3 = s.space === '3d', k = is3 ? 6 : 3, q = is3 ? s.q3d : s.q2d;
   var items = LIAISONS[s.space].map(function(l){ return {q:toN(q[l.id]), ic:l.ic}; });
-  var p = toN(s.p), mu = toN(s.mu), mi = toN(s.mi), m = mu + mi;
+  var ns = toN(s.p), p = ns + 1, mu = toN(s.mu), mi = toN(s.mi), m = mu + mi;
   var c = coreLiaisons(k, p, m, items), warns = [], rows = [], h = c.hS;
-  if (p < 2){ warns.push('Il faut au moins 2 solides : le bâti compte pour un.'); h = null; }
-  else if (c.L < p - 1){ warns.push('Avec ' + p + ' solides, il faut au moins ' + (p - 1) + ' liaisons pour tout relier (L = ' + c.L + ').'); h = null; }
+  if (ns < 1){ warns.push('Entre au moins 1 solide, sans compter le bâti.'); h = null; }
+  else if (c.L < p - 1){ warns.push('Avec ' + ns + ' solide' + (ns > 1 ? 's' : '') + ' et le bâti, il faut au moins ' + (p - 1) + ' liaisons pour tout relier (L = ' + c.L + ').'); h = null; }
   else if (h < 0){ warns.push('h ne peut pas être négatif. Vérifie m : une mobilité oubliée ou une liaison mal comptée donne ce résultat.'); }
-  rows.push(line('p', 'solides, bâti compris', String(p)));
+  rows.push(line('p', 'solides, bâti compris', ns + ' + 1 = ' + p));
   rows.push(line('L', 'liaisons', String(c.L)));
   rows.push(line('Ic', 'inconnues cinématiques', 'Σ ddl = ' + c.Ic));
   rows.push(line('Ns', 'inconnues statiques', k + '×' + c.L + ' − ' + c.Ic + ' = ' + c.Ns));
@@ -547,5 +556,4 @@ if (MODES.indexOf(h0) >= 0) S.mode = h0;
 build(); update();
 })();
 </script>
-
-</body></html>
+</html>
