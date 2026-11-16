@@ -1,12 +1,4 @@
-<!doctype html>
-<html lang="fr">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Hyperstatisme">
-<meta name="theme-color" content="#F2F4F6">
-<style>:root{color-scheme:light}</style>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Degré d’hyperstatisme</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -187,7 +179,7 @@ var LIAISONS = {
     {id:'piv', nom:'Pivot', mob:'1R', ic:1},
     {id:'gli', nom:'Glissière', mob:'1T', ic:1},
     {id:'hel', nom:'Hélicoïdale', mob:'1R+1T liées', ic:1},
-    {id:'pgl', nom:'Pivot glissant', mob:'1R 1T', ic:2},
+    {id:'pgl', nom:'Pivot glissant', mob:'1T + 1R autour du même axe', ic:2},
     {id:'rdo', nom:'Rotule à doigt', mob:'2R', ic:2},
     {id:'app', nom:'Appui plan', mob:'1R 2T', ic:3},
     {id:'rot', nom:'Rotule (sphérique)', mob:'3R', ic:3},
@@ -296,7 +288,7 @@ function buildLiaisons(){
     rowHTML({path:'liaisons.mu', name:'Mobilités utiles', hint:'Mouvements voulus, par exemple la rotation de l’arbre.'}) +
     rowHTML({path:'liaisons.mi', name:'Mobilités internes', hint:'Mouvements sans effet sur la sortie, par exemple la rotation d’un galet sur son axe.'}) +
     '</div>';
-  html += '<div class="group"><h2>Liaisons</h2><p class="rhint">Ic : degrés de liberté de la liaison. Ns : inconnues statiques, soit ' + k + ' − Ic.</p>';
+  html += '<div class="group"><h2>Liaisons</h2><p class="rhint">Ic : degrés de liberté de la liaison. Ns : inconnues statiques, soit ' + k + ' − Ic.' + (is3 ? '' : ' Pour le pivot glissant ou la rotule, passe en Espace 3D.') + '</p>';
   LIAISONS[s.space].forEach(function(l){
     html += rowHTML({path:'liaisons.' + qp + '.' + l.id, name:l.nom, meta:l.mob + ' · Ic ' + l.ic + ' · Ns ' + (k - l.ic), opt:true});
   });
@@ -555,4 +547,5 @@ if (MODES.indexOf(h0) >= 0) S.mode = h0;
 build(); update();
 })();
 </script>
-</html>
+
+</body></html>
